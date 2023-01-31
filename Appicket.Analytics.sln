@@ -1,0 +1,58 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33103.184
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Appicket.Analytics", "src\Appicket.Analytics\Appicket.Analytics.csproj", "{AFD7E456-1E01-4CD8-823E-2B85B64ED1E0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Appicket.Analytics.WebAPI.Extensions", "..\AppicketV2\Integration\Appicket.Analytics.WebAPI.Extensions\Appicket.Analytics.WebAPI.Extensions.csproj", "{F05B0146-9EAB-4F2F-BEBF-FE8487AD80BF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6543AF5A-AC3D-4A17-A411-F31405868E67}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{177585F2-7369-48EA-8152-332EB5A11147}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Appicket.Analytics.Test", "test\Appicket.Analytics.Test\Appicket.Analytics.Test.csproj", "{A5A94A40-B11E-4940-932E-25AD93BD777B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Appicket.Analytics.WebAPI.Extensions.Test", "test\Appicket.Analytics.WebAPI.Extensions.Test\Appicket.Analytics.WebAPI.Extensions.Test.csproj", "{E99C23FF-8F52-4948-B564-22B0FB4E1D2C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DDD9E755-711C-4332-863E-0501EBBB1EED}"
+	ProjectSection(SolutionItems) = preProject
+		src\Appicket.Analytics\.editorconfig = src\Appicket.Analytics\.editorconfig
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AFD7E456-1E01-4CD8-823E-2B85B64ED1E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFD7E456-1E01-4CD8-823E-2B85B64ED1E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFD7E456-1E01-4CD8-823E-2B85B64ED1E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFD7E456-1E01-4CD8-823E-2B85B64ED1E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F05B0146-9EAB-4F2F-BEBF-FE8487AD80BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F05B0146-9EAB-4F2F-BEBF-FE8487AD80BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F05B0146-9EAB-4F2F-BEBF-FE8487AD80BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F05B0146-9EAB-4F2F-BEBF-FE8487AD80BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5A94A40-B11E-4940-932E-25AD93BD777B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5A94A40-B11E-4940-932E-25AD93BD777B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5A94A40-B11E-4940-932E-25AD93BD777B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5A94A40-B11E-4940-932E-25AD93BD777B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E99C23FF-8F52-4948-B564-22B0FB4E1D2C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E99C23FF-8F52-4948-B564-22B0FB4E1D2C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E99C23FF-8F52-4948-B564-22B0FB4E1D2C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E99C23FF-8F52-4948-B564-22B0FB4E1D2C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{AFD7E456-1E01-4CD8-823E-2B85B64ED1E0} = {6543AF5A-AC3D-4A17-A411-F31405868E67}
+		{F05B0146-9EAB-4F2F-BEBF-FE8487AD80BF} = {6543AF5A-AC3D-4A17-A411-F31405868E67}
+		{A5A94A40-B11E-4940-932E-25AD93BD777B} = {177585F2-7369-48EA-8152-332EB5A11147}
+		{E99C23FF-8F52-4948-B564-22B0FB4E1D2C} = {177585F2-7369-48EA-8152-332EB5A11147}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CAE89791-3090-4E7D-8D03-6C88EE9C93CA}
+	EndGlobalSection
+EndGlobal
