@@ -27,7 +27,7 @@ namespace Appicket.Analytics.WebAPI.Extensions.Middlewares
 
         public Task Invoke(HttpContext context)
         {
-            if (context.Request.Method == "OPTIONS" || this.IsStaticFile(context.Request)/* || this.GetUserAgent(context.Request).IndexOf("Appicket") > -1*/ || this.IsAppicketPublicAPIRequest(context.Request))
+            if (context.Request.Method == "OPTIONS" || this.IsStaticFile(context.Request) || this.GetUserAgent(context.Request).IndexOf("Appicket") > -1 || this.IsAppicketPublicAPIRequest(context.Request))
                 return BeginInvoke(context);
 
             var options = new ApplicationConfigModel()
@@ -47,7 +47,7 @@ namespace Appicket.Analytics.WebAPI.Extensions.Middlewares
 
             if (string.IsNullOrEmpty(options.DeviceID) && !string.IsNullOrEmpty(DeviceID))
                 options.DeviceID = DeviceID;
-            
+
             var Analyzer = new Analyzer(options, this.MiddlewareOptions.AppicketServerURL, Convert.ToInt64(AppicketSessionID), Convert.ToInt64(RefAppicketSessionID), this.MiddlewareOptions.APIDocumentationPath);
 
             if (!Analyzer.IsActive || Analyzer.SessionID.GetValueOrDefault(0) <= 0)

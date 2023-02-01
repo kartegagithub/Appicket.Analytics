@@ -10,7 +10,7 @@ namespace Appicket.Analytics.Models
         public long ReferencedID { get; set; }
 
         /// <summary>
-        /// Device Type Name which you have created at appicket.com. Visit <see href="https://appicket.com/Tracking/DeviceTypeList"/>
+        /// Device Type Name which you have created at appicket.com. Visit <see href="https://www.appicket.com/Tracking/DeviceTypeList"/>
         /// </summary>
         public string DeviceType { get; set; }
 
@@ -25,12 +25,12 @@ namespace Appicket.Analytics.Models
         public string Name { get; set; }
 
         /// <summary>
-        /// ClientID which you have created at appicket.com. Visit <see href="https://appicket.com/Membership/ApplicationDomainList"/>
+        /// ClientID which you have created at appicket.com. Visit <see href="https://www.appicket.com/Membership/ApplicationDomainList"/>
         /// </summary>
         public string ClientID { get; set; }
 
         /// <summary>
-        /// ClientSecret which you have created at appicket.com. Visit <see href="https://appicket.com/Membership/ApplicationDomainList"/>
+        /// ClientSecret which you have created at appicket.com. Visit <see href="https://www.appicket.com/Membership/ApplicationDomainList"/>
         /// </summary>
         public string ClientSecret { get; set; }
         

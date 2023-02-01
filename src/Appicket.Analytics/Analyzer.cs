@@ -269,7 +269,7 @@ namespace Appicket.Analytics
             this.Version = typeof(Analyzer).Assembly.GetName().Version.ToString();
             this.ServerURL = serverURL;
             if (string.IsNullOrEmpty(this.ServerURL))
-                this.ServerURL = "http://api.appicket.com";
+                this.ServerURL = "https://api.appicket.com";
 
             this.CurrentSession = new TrackingSessionWriteModel() { SessionID = sessionID, ReferencedSessionID = refSessionID };
             if (!InstanceID.HasValue)

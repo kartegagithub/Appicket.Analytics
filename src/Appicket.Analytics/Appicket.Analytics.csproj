@@ -5,13 +5,14 @@
 		<Authors>Kartega Development Team</Authors>
 		<Company>Kartega Yazilim ve Danismanlik A.S.</Company>
 		<Description>Appicket: Application Performance &amp; Diagnostic Tool</Description>
-		<Copyright>© Kartega Yazilim ve Danismanlik A.S.. All rights reserved.</Copyright>
-		<PackageProjectUrl>https://appicket.com</PackageProjectUrl>
+		<Copyright>© Kartega Yazilim ve Danismanlik A.S. All rights reserved.</Copyright>
+		<PackageProjectUrl>https://www.appicket.com</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/kartegagithub/Appicket.Analytics</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackAsTool>False</PackAsTool>
 		<EnableNETAnalyzers>True</EnableNETAnalyzers>
 		<AnalysisLevel>latest-recommended</AnalysisLevel>
+		<Version>1.0.0.1</Version>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
 	  <WarningLevel>9999</WarningLevel>
@@ -27,6 +28,10 @@
 	</PropertyGroup>
 	<ItemGroup>
 	  <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+	  <PackageReference Include="NuGet.CommandLine" Version="6.4.0">
+	    <PrivateAssets>all</PrivateAssets>
+	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	  </PackageReference>
 	  <PackageReference Include="System.Net.Http.Json" Version="7.0.0" />
 	  <PackageReference Include="System.ServiceModel.Primitives" Version="4.10.0" />
 	</ItemGroup>

@@ -1,11 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFrameworks>netcoreapp3.1;net6.0;net7.0</TargetFrameworks>
-		<Authors>Kartega</Authors>
-		<Company>Kartega</Company>
-		<Product>Appicket.Analytics</Product>
-		<Copyright>Kartega</Copyright>
-		<PackageProjectUrl>https://appicket.com</PackageProjectUrl>
+		<Authors>Kartega Development Team</Authors>
+		<Company>Kartega Yazilim ve Danismanlik A.S.</Company>
+		<Product>$(AssemblyName)</Product>
+		<Copyright>© Kartega Yazilim ve Danismanlik A.S. All rights reserved.</Copyright>
+		<PackageProjectUrl>https://www.appicket.com</PackageProjectUrl>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Description>Appicket: Application Performance &amp; Diagnostic Tool AspNet Core MVC extensions</Description>
+		<RepositoryUrl>https://github.com/kartegagithub/Appicket.Analytics</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<Version>1.0.0.1</Version>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.0" />

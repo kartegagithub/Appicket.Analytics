@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\AppicketV2\Integration\Appicket.Analytics.WebAPI.Extensions\Appicket.Analytics.WebAPI.Extensions.csproj" />
+    <ProjectReference Include="..\..\src\Appicket.Analytics.WebAPI.Extensions\Appicket.Analytics.WebAPI.Extensions.csproj" />
     <ProjectReference Include="..\..\src\Appicket.Analytics\Appicket.Analytics.csproj" />
   </ItemGroup>
 

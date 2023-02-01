@@ -1,8 +1,6 @@
 ﻿using Appicket.Analytics.Models;
 using Microsoft.AspNetCore.Http;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Appicket.Analytics.WebAPI.Extensions
 {
@@ -20,7 +18,7 @@ namespace Appicket.Analytics.WebAPI.Extensions
         public Action<HttpContext, ApplicationConfigModel> ConfigureRequest { get; set; }
         public AnalyzerOptions()
         {
-            
+
         }
     }
 }
