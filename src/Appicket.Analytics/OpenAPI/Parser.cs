@@ -31,6 +31,7 @@ namespace Appicket.Analytics.OpenAPI
                     var model = Newtonsoft.Json.JsonConvert.DeserializeObject<OpenAPIDocument>(content);
                     if (model != null && model.paths != null && model.paths.Any())
                     {
+                        model.RawContent = content;
                         this.Analyzer.RegisterAPIDocumentation(model);
                     }
                 }

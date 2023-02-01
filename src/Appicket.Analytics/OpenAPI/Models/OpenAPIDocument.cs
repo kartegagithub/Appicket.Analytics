@@ -11,6 +11,7 @@ namespace Appicket.Analytics.OpenAPI.Models
         public string port { get; set; }
         public string[] schemes { get; set; }
         public Dictionary<string, OpenAPIEndpointMethod> paths { get; set; }
+        public string RawContent { get; set; }
     }
 
     public class OpenAPIDocumentInfo

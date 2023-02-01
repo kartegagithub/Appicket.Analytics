@@ -275,7 +275,8 @@ namespace Appicket.Analytics
             if (!InstanceID.HasValue)
             {
                 InstanceID = new Random().Next(int.MaxValue);
-                this.CheckIsEnabled(() => {
+                this.CheckIsEnabled(() =>
+                {
                     if (!string.IsNullOrEmpty(openAPIDocPath))
                         this.RegisterAPIDocumentation(openAPIDocPath);
                 });
@@ -327,6 +328,7 @@ namespace Appicket.Analytics
                         Title = model.info.title,
                         Description = model.info.description,
                         Version = model.info.version,
+                        model.RawContent,
                         TrackingHost = new
                         {
                             Name = model.host
