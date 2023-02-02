@@ -192,6 +192,7 @@ namespace Appicket.Analytics
                     }
 
                     this.PostData("/public/TrackSession", this.CurrentSession);
+                    this.CurrentSession = new TrackingSessionWriteModel() { SessionID = this.CurrentSession.SessionID, ReferencedSessionID = this.CurrentSession.ReferencedSessionID };
                 });
             }
         }
