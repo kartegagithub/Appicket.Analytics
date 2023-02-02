@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.ServiceModel.Dispatcher;
@@ -41,8 +42,11 @@ namespace Appicket.Analytics.Loggers
             this.RequestModel.Headers = Newtonsoft.Json.JsonConvert.SerializeObject(request.Headers);
             using (var buffer = request.CreateBufferedCopy(int.MaxValue))
             {
-                var document = GetDocument(buffer.CreateMessage());
-                this.RequestModel.Parameters = document.OuterXml;
+                if (Analyzer.Current != null && Analyzer.Current.EnableRequestBodyLogging)
+                {
+                    var document = GetDocument(buffer.CreateMessage());
+                    this.RequestModel.Parameters = document.OuterXml;
+                }
                 this.Watch.Start();
 
                 request = buffer.CreateMessage();

@@ -49,6 +49,8 @@ namespace Appicket.Analytics.WebAPI.Extensions.Middlewares
                 options.DeviceID = DeviceID;
 
             var Analyzer = new Analyzer(options, this.MiddlewareOptions.AppicketServerURL, Convert.ToInt64(AppicketSessionID), Convert.ToInt64(RefAppicketSessionID), this.MiddlewareOptions.APIDocumentationPath);
+            Analyzer.EnableRequestBodyLogging = this.MiddlewareOptions.EnableRequestBodyLogging;
+            Analyzer.AddHiddenRequestParams(this.MiddlewareOptions.HiddenRequestParams);
 
             if (!Analyzer.IsActive || Analyzer.SessionID.GetValueOrDefault(0) <= 0)
                 return BeginInvoke(context);

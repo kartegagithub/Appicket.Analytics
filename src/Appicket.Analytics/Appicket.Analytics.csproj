@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Authors>Kartega Development Team</Authors>
+		<Authors>Kartega</Authors>
 		<Company>Kartega Yazilim ve Danismanlik A.S.</Company>
 		<Description>Appicket: Application Performance &amp; Diagnostic Tool</Description>
 		<Copyright>© Kartega Yazilim ve Danismanlik A.S. All rights reserved.</Copyright>
@@ -12,7 +12,7 @@
 		<PackAsTool>False</PackAsTool>
 		<EnableNETAnalyzers>True</EnableNETAnalyzers>
 		<AnalysisLevel>latest-recommended</AnalysisLevel>
-		<Version>1.0.0.2</Version>
+		<Version>1.0.0.3</Version>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
 	  <WarningLevel>9999</WarningLevel>

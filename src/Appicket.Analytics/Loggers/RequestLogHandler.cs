@@ -39,14 +39,12 @@ namespace Appicket.Analytics.Loggers
             var watch = new Stopwatch();
             try
             {
-                if (request.Content != null)
-                {
+                if (request.Content != null && Analyzer.Current != null && Analyzer.Current.EnableRequestBodyLogging)
                     model.Parameters = Encoding.UTF8.GetString(request.Content.ReadAsByteArrayAsync().Result);
-                }
+                
                 if (request.Headers != null)
-                {
                     model.Headers = Newtonsoft.Json.JsonConvert.SerializeObject(request.Headers);
-                }
+
                 watch.Start();
             }
             catch (System.Exception ex)
@@ -64,13 +62,9 @@ namespace Appicket.Analytics.Loggers
                     byte[] responseMessage;
 
                     if (response.Content != null)
-                    {
                         responseMessage = response.Content.ReadAsByteArrayAsync().Result;
-                    }
                     else
-                    {
                         responseMessage = Encoding.UTF8.GetBytes(response.ReasonPhrase);
-                    }
                     model.ResponseBodyLength = responseMessage.Length;
 
                     Analyzer.Current?.LogRequest(model);

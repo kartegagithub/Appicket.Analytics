@@ -1,6 +1,7 @@
 ﻿using Appicket.Analytics.Models;
 using Appicket.Analytics.OpenAPI.Models;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -22,13 +23,14 @@ namespace Appicket.Analytics
         private static object RequestLockObj = new object();
         private static object EnableLockObj = new object();
         private static ResponseModel RemoteConfig { get; set; }
-
+        public static List<string> HiddenRequestParams { get; private set; } = new List<string>();
         private string Version { get; set; } = "";
         public ApplicationConfigModel Config { get; set; } = new ApplicationConfigModel();
         private TrackingSessionWriteModel CurrentSession { get; set; }
         private string ServerURL { get; set; }
         public IWebProxy Proxy { get; set; }
         public int Timeout { get; set; }
+        public bool EnableRequestBodyLogging { get; set; } = false;
         public long? SessionID
         {
             get
@@ -175,6 +177,20 @@ namespace Appicket.Analytics
                 this.RunInTread(() =>
                 {
                     this.StartSession();
+                    if (this.CurrentSession.Requests != null && this.CurrentSession.Requests.Any())
+                    {
+                        if (!this.EnableRequestBodyLogging)
+                            this.CurrentSession.Requests.ForEach(op => op.Parameters = "");
+                        else
+                        {
+                            foreach (var item in this.CurrentSession.Requests)
+                            {
+                                if (this.ContainsHiddenParams(item.Parameters))
+                                    item.Parameters = "";
+                            }
+                        }
+                    }
+
                     this.PostData("/public/TrackSession", this.CurrentSession);
                 });
             }
@@ -280,6 +296,8 @@ namespace Appicket.Analytics
                     if (!string.IsNullOrEmpty(openAPIDocPath))
                         this.RegisterAPIDocumentation(openAPIDocPath);
                 });
+
+                HiddenRequestParams.AddRange(new List<string>() { "Password", "Email", "TCK", "Birthday", "BirthYear", "Birthdate", "Credit", "IdentityNumber" });
             }
             else
             {
@@ -340,6 +358,31 @@ namespace Appicket.Analytics
                                }
                     });
                 });
+            }
+        }
+        public bool ContainsHiddenParams(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return false;
+
+            foreach (var item in HiddenRequestParams)
+            {
+                if (content.IndexOf(item, StringComparison.InvariantCultureIgnoreCase) > -1)
+                    return true;
+            }
+            return false;
+        }
+        public void AddHiddenRequestParams(List<string> list)
+        {
+            if (list == null || !list.Any())
+                return;
+
+            for (int i = list.Count - 1; i >= 0; i--)
+            {
+                var val = list[i];
+                if (!HiddenRequestParams.Contains(val))
+                    HiddenRequestParams.Add(val);
+                list.Remove(val);
             }
         }
         private void RunInTread(ThreadStart ts)
