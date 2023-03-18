@@ -12,7 +12,9 @@
 		<PackAsTool>False</PackAsTool>
 		<EnableNETAnalyzers>True</EnableNETAnalyzers>
 		<AnalysisLevel>latest-recommended</AnalysisLevel>
-		<Version>1.0.0.4</Version>
+		<Version>1.0.0.5</Version>
+		<RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+		<PackageOutputPath>$(SolutionDir)packages\nuget\$(Configuration)\</PackageOutputPath>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
 	  <WarningLevel>9999</WarningLevel>
@@ -32,4 +34,7 @@
 	  <PackageReference Include="System.Net.Http.Json" Version="7.0.0" />
 	  <PackageReference Include="System.ServiceModel.Primitives" Version="4.10.0" />
 	</ItemGroup>
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="xcopy &quot;$(ProjectDir)bin\*.*&quot; &quot;$(SolutionDir)packages\nuget\&quot; /Y /E /F&#xD;&#xA;xcopy &quot;$(ProjectDir)bin\*.*&quot; &quot;$(SolutionDir)packages\nuget\&quot; /Y /E /F" />
+	</Target>
 </Project>
