@@ -39,7 +39,7 @@ namespace Appicket.Analytics.Loggers
             var watch = new Stopwatch();
             try
             {
-                if (request.Content != null && Analyzer.Current != null && Analyzer.Current.EnableRequestBodyLogging)
+                if (request.Content != null && Analyzer.EnableRequestBodyLogging)
                     model.Parameters = Encoding.UTF8.GetString(request.Content.ReadAsByteArrayAsync().Result);
                 
                 if (request.Headers != null)
@@ -49,7 +49,7 @@ namespace Appicket.Analytics.Loggers
             }
             catch (System.Exception ex)
             {
-                Analyzer.Current?.LogException(ex);
+                Analyzer.LogException(ex);
             }
             try
             {
@@ -67,23 +67,23 @@ namespace Appicket.Analytics.Loggers
                         responseMessage = Encoding.UTF8.GetBytes(response.ReasonPhrase);
                     model.ResponseBodyLength = responseMessage.Length;
 
-                    Analyzer.Current?.LogRequest(model);
+                    Analyzer.LogRequest(model);
                 }
                 catch (System.Exception ex)
                 {
-                    Analyzer.Current?.LogRequest(model);
-                    Analyzer.Current?.LogException(ex);
+                    Analyzer.LogRequest(model);
+                    Analyzer.LogException(ex);
                 }
             }
             catch (System.Exception ex)
             {
                 model.ResponseCode = 501;
-                Analyzer.Current?.LogRequest(model);
-                Analyzer.Current?.LogException(ex);
+                Analyzer.LogRequest(model);
+                Analyzer.LogException(ex);
             }
             finally
             {
-                Analyzer.Current?.Commit();
+                Analyzer.Commit();
                 watch = null;
                 model = null;
             }

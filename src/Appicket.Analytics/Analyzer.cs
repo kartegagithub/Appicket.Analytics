@@ -3,86 +3,68 @@ using Appicket.Analytics.OpenAPI.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Security.Policy;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Appicket.Analytics
 {
     public class Analyzer
     {
-        public static Analyzer Current => _CurrentAnalyzerHolder?.Value;
-        private static AsyncLocal<Analyzer> _CurrentAnalyzerHolder { get; set; } = new AsyncLocal<Analyzer>();
+        [ThreadStatic]
+        private static TrackingSessionWriteModel CurrentSession;
+
+        private static List<TrackingSessionWriteModel> Sessions = new List<TrackingSessionWriteModel>();
+
         public static int? InstanceID { get; set; }
         public static bool? IsEnabled { get; set; }
-        private static object RequestLockObj = new object();
-        private static object EnableLockObj = new object();
         private static ResponseModel RemoteConfig { get; set; }
         public static List<string> HiddenRequestParams { get; private set; } = new List<string>();
-        private string Version { get; set; } = "";
-        public ApplicationConfigModel Config { get; set; } = new ApplicationConfigModel();
-        private TrackingSessionWriteModel CurrentSession { get; set; }
-        private string ServerURL { get; set; }
-        public IWebProxy Proxy { get; set; }
-        public int Timeout { get; set; }
-        public bool EnableRequestBodyLogging { get; set; } = false;
-        public long? SessionID
+        private static string Version { get; set; } = "";
+        public static ApplicationConfigModel Config { get; set; } = new ApplicationConfigModel();
+        private static string ServerURL { get; set; }
+        public static IWebProxy Proxy { get; set; }
+        public static int Timeout { get; set; }
+        public static bool EnableRequestBodyLogging { get; set; }
+        public static long? SessionID => CurrentSession?.SessionID;
+        public static void LogRequest(TrackingRequestLogModel model)
         {
-            get
-            {
-                return this.CurrentSession?.SessionID;
-            }
-            set
-            {
-                if (this.CurrentSession == null)
-                    this.CurrentSession = new TrackingSessionWriteModel();
-                this.CurrentSession.SessionID = value.GetValueOrDefault(0);
-            }
+            if (Analyzer.IsActive && RemoteConfig.Config.EnableRequest && CurrentSession != null)
+                CurrentSession.Requests.Add(model);
         }
 
-        public void LogRequest(TrackingRequestLogModel model)
+        public static void Interact(TrackingInteractionModel model)
         {
-            if (this.IsActive && RemoteConfig.Config.EnableRequest && this.CurrentSession != null)
-                this.CurrentSession.Requests.Add(model);
+            if (Analyzer.IsActive && RemoteConfig.Config.EnableInteractionTracking && CurrentSession != null)
+                CurrentSession.Interactions.Add(model);
         }
 
-        public void Interact(TrackingInteractionModel model)
+        public static void ViewProduct(ProductViewModel model)
         {
-            if (this.IsActive && RemoteConfig.Config.EnableInteractionTracking && this.CurrentSession != null)
-                this.CurrentSession.Interactions.Add(model);
+            if (Analyzer.IsActive && CurrentSession != null)
+                CurrentSession.ProductViews.Add(model);
         }
 
-        public void ViewProduct(ProductViewModel model)
+        public static void SaleProduct(ProductSalesModel model)
         {
-            if (this.IsActive && this.CurrentSession != null)
-                this.CurrentSession.ProductViews.Add(model);
+            if (Analyzer.IsActive && CurrentSession != null)
+                CurrentSession.ProductSales.Add(model);
+        }
+        public static void ViewPage(TrackingPageViewModel model)
+        {
+            if (Analyzer.IsActive && RemoteConfig.Config.EnablePageView && CurrentSession != null)
+                CurrentSession.PageViews.Add(model);
         }
 
-        public void SaleProduct(ProductSalesModel model)
+        public static void Log(LogType type, string description)
         {
-            if (this.IsActive && this.CurrentSession != null)
+            if (Analyzer.IsActive && RemoteConfig.Config.EnableLog && CurrentSession != null)
             {
-                this.CurrentSession.ProductSales.Add(model);
-            }
-        }
-        public void ViewPage(TrackingPageViewModel model)
-        {
-            if (this.IsActive && RemoteConfig.Config.EnablePageView && this.CurrentSession != null)
-            {
-                this.CurrentSession.PageViews.Add(model);
-            }
-        }
-
-        public void Log(LogType type, string description)
-        {
-            if (this.IsActive && RemoteConfig.Config.EnableLog && this.CurrentSession != null)
-            {
-                this.CurrentSession.Logs.Add(new TrackingLogModel()
+                CurrentSession.Logs.Add(new TrackingLogModel()
                 {
                     Description = description,
                     Type = (byte)type
@@ -90,11 +72,11 @@ namespace Appicket.Analytics
             }
         }
 
-        public void LogException(Exception ex)
+        public static void LogException(Exception ex)
         {
-            if (this.IsActive && RemoteConfig.Config.EnableExceptionLog && this.CurrentSession != null)
+            if (Analyzer.IsActive && RemoteConfig.Config.EnableExceptionLog && CurrentSession != null)
             {
-                this.CurrentSession.Exceptions.Add(new TrackingExceptionLogModel()
+                CurrentSession.Exceptions.Add(new TrackingExceptionLogModel()
                 {
                     Message = ex.Message,
                     StackTrace = ex.StackTrace,
@@ -102,7 +84,7 @@ namespace Appicket.Analytics
                 ex = ex.InnerException;
                 while (ex != null)
                 {
-                    this.CurrentSession.Exceptions.Add(new TrackingExceptionLogModel()
+                    CurrentSession.Exceptions.Add(new TrackingExceptionLogModel()
                     {
                         Message = ex.Message,
                         StackTrace = ex.StackTrace,
@@ -111,11 +93,11 @@ namespace Appicket.Analytics
                 }
             }
         }
-        public void CheckIsEnabled(Action deferredFunc)
+        public static async void CheckIsEnabled(Action deferredFunc)
         {
             try
             {
-                if (this.Config == null || string.IsNullOrEmpty(this.Config.ClientID) || string.IsNullOrEmpty(this.Config.DeviceType) || string.IsNullOrEmpty(this.Config.ClientSecret))
+                if (Config == null || string.IsNullOrEmpty(Config.ClientID) || string.IsNullOrEmpty(Config.DeviceType) || string.IsNullOrEmpty(Config.ClientSecret))
                 {
                     IsEnabled = false;
                     return;
@@ -123,23 +105,21 @@ namespace Appicket.Analytics
 
                 if (!IsEnabled.HasValue)
                 {
-                    lock (EnableLockObj)
+                    if (!IsEnabled.HasValue)
                     {
-                        if (!IsEnabled.HasValue)
+                        var config = GetConfig(CurrentSession?.SessionID, CurrentSession?.ReferencedSessionID);
+                        var result = await PostData("/public/IsEnabled", config);
+                        if (!string.IsNullOrEmpty(result))
                         {
-                            var config = this.GetConfig();
-                            var result = this.PostData("/public/IsEnabled", config);
-                            if (!string.IsNullOrEmpty(result))
+                            var model = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseModel>(result);
+                            if (model.Value == "1" && model.Config != null)
                             {
-                                var model = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseModel>(result);
-                                if (model.Value == "1" && model.Config != null)
-                                {
-                                    RemoteConfig = model;
-                                    IsEnabled = RemoteConfig.Config.EnableRequest || RemoteConfig.Config.EnableDeviceInfoUpdate || RemoteConfig.Config.EnableExceptionLog || RemoteConfig.Config.EnableLog || RemoteConfig.Config.EnablePageView || RemoteConfig.Config.EnableInteractionTracking;
-                                    this.CurrentSession.SessionID = model.SessionID;
-                                    if (deferredFunc != null)
-                                        deferredFunc();
-                                }
+                                RemoteConfig = model;
+                                IsEnabled = RemoteConfig.Config.EnableRequest || RemoteConfig.Config.EnableDeviceInfoUpdate || RemoteConfig.Config.EnableExceptionLog || RemoteConfig.Config.EnableLog || RemoteConfig.Config.EnablePageView || RemoteConfig.Config.EnableInteractionTracking;
+                                CurrentSession.SessionID = model.SessionID;
+                                Sessions.Add(CurrentSession);
+                                if (deferredFunc != null)
+                                    deferredFunc();
                             }
                         }
                     }
@@ -150,97 +130,80 @@ namespace Appicket.Analytics
                 Debug.WriteLine(ex.ToString());
             }
         }
-        public void UpdateDeviceInfo()
+        public static async void UpdateDeviceInfo()
         {
-            if (this.IsActive && RemoteConfig.Config.EnableDeviceInfoUpdate)
-            {
-                this.RunInTread(() =>
-                {
-                    this.PostData("/public/UpdateDeviceInfo", this.GetConfig());
-                });
-            }
+            if (Analyzer.IsActive && RemoteConfig.Config.EnableDeviceInfoUpdate)
+                await PostData("/public/UpdateDeviceInfo", GetConfig(CurrentSession?.SessionID, CurrentSession?.ReferencedSessionID));
         }
-        public void EndSession()
+        public static async void Commit()
         {
-            if (this.IsActive && this.CurrentSession != null && this.CurrentSession.SessionID > 0)
-            {
-                this.RunInTread(() =>
-                {
-                    this.PostData("/public/EndSession", new TrackingSessionModel() { ID = this.CurrentSession.SessionID });
-                });
-            }
+            await Commit(CurrentSession);
         }
-        public void Commit()
+        public static async Task Commit(TrackingSessionWriteModel session)
         {
-            if (this.IsActive && this.CurrentSession != null && (this.CurrentSession.Exceptions.Any() || this.CurrentSession.Logs.Any() || this.CurrentSession.Interactions.Any() || this.CurrentSession.Requests.Any() || this.CurrentSession.PageViews.Any() || this.CurrentSession.ProductSales.Any() || this.CurrentSession.PageViews.Any()))
+            if (Analyzer.IsActive && session != null && (session.Exceptions.Any() || session.Logs.Any() || session.Interactions.Any() || session.Requests.Any() || session.PageViews.Any() || session.ProductSales.Any() || session.PageViews.Any()))
             {
-                this.RunInTread(() =>
+                if (session.Requests != null && session.Requests.Any())
                 {
-                    this.StartSession();
-                    if (this.CurrentSession.Requests != null && this.CurrentSession.Requests.Any())
+                    if (!EnableRequestBodyLogging)
+                        session.Requests.ForEach(op => op.Parameters = "");
+                    else
                     {
-                        if (!this.EnableRequestBodyLogging)
-                            this.CurrentSession.Requests.ForEach(op => op.Parameters = "");
-                        else
+                        foreach (var item in session.Requests)
                         {
-                            foreach (var item in this.CurrentSession.Requests)
-                            {
-                                if (this.ContainsHiddenParams(item.Parameters))
-                                    item.Parameters = "";
-                            }
+                            if (ContainsHiddenParams(item.Parameters))
+                                item.Parameters = "";
                         }
                     }
+                }
 
-                    this.PostData("/public/TrackSession", this.CurrentSession);
-                    this.CurrentSession = new TrackingSessionWriteModel() { SessionID = this.CurrentSession.SessionID, ReferencedSessionID = this.CurrentSession.ReferencedSessionID };
-                });
+                await PostData("/public/TrackSession", session);
             }
         }
-        public void StartSession(bool force = false)
+        public static async Task<TrackingSessionWriteModel> StartSession()
         {
-            if (this.IsActive && (force || this.CurrentSession == null || this.CurrentSession.SessionID <= 0))
+            if (Analyzer.IsActive)
             {
-                if (this.CurrentSession == null)
-                    this.CurrentSession = new TrackingSessionWriteModel();
-
-                var result = this.PostData("/public/StartSession", this.GetConfig());
+                var result = await PostData("/public/StartSession", GetConfig(CurrentSession?.SessionID, CurrentSession?.ReferencedSessionID));
                 if (!string.IsNullOrEmpty(result))
                 {
                     var model = Newtonsoft.Json.JsonConvert.DeserializeObject<ResponseModel>(result);
                     if (model.SessionID > 0)
-                        this.CurrentSession.SessionID = model.SessionID;
+                    {
+                        var session = new TrackingSessionWriteModel() { SessionID = model.SessionID };
+                        Sessions.Add(session);
+                        return session;
+                    }
                 }
             }
+            return null;
         }
-        private string PostData(string url, object data)
+        private static async Task<string> PostData(string url, object data)
         {
             try
             {
-                lock (RequestLockObj)
+                using (var clientHandler = new HttpClientHandler())
                 {
-                    using (var clientHandler = new HttpClientHandler())
+                    using (var client = new HttpClient())
                     {
-                        using (var client = new HttpClient())
-                        {
-                            client.DefaultRequestHeaders.Add("User-Agent", $"Appicket.Analytics {this.Version}");
-                            clientHandler.Proxy = this.Proxy;
-                            clientHandler.UseProxy = this.Proxy != null;
+                        client.DefaultRequestHeaders.Add("User-Agent", $"Appicket.Analytics {Version}");
+                        clientHandler.Proxy = Proxy;
+                        clientHandler.UseProxy = Proxy != null;
 
-                            var request = new HttpRequestMessage(HttpMethod.Post, $"{this.ServerURL}{url}");
-                            if (data != null)
-                                request.Content = JsonContent.Create(data, data.GetType(), new MediaTypeHeaderValue("application/json"));
+                        var request = new HttpRequestMessage(HttpMethod.Post, $"{ServerURL}{url}");
+                        if (data != null)
+                            request.Content = JsonContent.Create(data, data.GetType(), new MediaTypeHeaderValue("application/json"));
 
-                            if (RemoteConfig != null && !string.IsNullOrEmpty(RemoteConfig.AuthKey))
-                                request.Content.Headers.Add("X-Auth-Key", RemoteConfig.AuthKey);
+                        if (RemoteConfig != null && !string.IsNullOrEmpty(RemoteConfig.AuthKey))
+                            request.Content.Headers.Add("X-Auth-Key", RemoteConfig.AuthKey);
 
-                            if (this.Timeout > 0)
-                                client.Timeout = TimeSpan.FromMilliseconds(this.Timeout);
-                            var response = client.SendAsync(request).Result;
-                            if (response.IsSuccessStatusCode)
-                                return response.Content.ReadAsStringAsync().Result;
-                            else
-                                return "";
-                        }
+                        if (Timeout > 0)
+                            client.Timeout = TimeSpan.FromMilliseconds(Timeout);
+                        var response = client.SendAsync(request).Result;
+                        if (response.IsSuccessStatusCode)
+                            return await response.Content.ReadAsStringAsync();
+                        else
+                            return "";
                     }
                 }
             }
@@ -249,28 +212,23 @@ namespace Appicket.Analytics
                 return "";
             }
         }
-        public bool IsActive
-        {
-            get
-            {
-                return IsEnabled.HasValue && IsEnabled.Value;
-            }
-        }
-        private ApplicationConfigModel GetConfig()
+        public static bool IsActive => IsEnabled.HasValue && IsEnabled.Value;
+
+        private static ApplicationConfigModel GetConfig(long? sessionID = 0, long? referencedSessionID = 0)
         {
             var process = Process.GetCurrentProcess();
             if (process != null)
             {
-                this.Config.ID = this.CurrentSession.SessionID;
-                this.Config.ReferencedID = this.CurrentSession.ReferencedSessionID;
-                this.Config.AvailableMemory = process.WorkingSet64;
-                this.Config.CPUUsage = Convert.ToInt64(process.TotalProcessorTime.TotalMilliseconds);
+                Config.ID = sessionID.GetValueOrDefault(0);
+                Config.ReferencedID = referencedSessionID.GetValueOrDefault(0);
+                Config.AvailableMemory = process.WorkingSet64;
+                Config.CPUUsage = Convert.ToInt64(process.TotalProcessorTime.TotalMilliseconds);
             }
-            return this.Config;
+            return Config;
         }
         public Analyzer(ApplicationConfigModel config, string serverURL = "", long sessionID = 0, long refSessionID = 0, string openAPIDocPath = "")
         {
-            this.Config = config;
+            Config = config;
             if (string.IsNullOrEmpty(config.DeviceID))
                 config.DeviceID = Environment.MachineName;
             if (string.IsNullOrEmpty(config.OperatingSystem))
@@ -283,85 +241,83 @@ namespace Appicket.Analytics
                 config.Firmware = $"{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}";
             if (string.IsNullOrEmpty(config.ApplicationStatus))
                 config.ApplicationStatus = "A";
-            this.Version = typeof(Analyzer).Assembly.GetName().Version.ToString();
-            this.ServerURL = serverURL;
-            if (string.IsNullOrEmpty(this.ServerURL))
-                this.ServerURL = "https://api.appicket.com";
+            Version = typeof(Analyzer).Assembly.GetName().Version.ToString();
+            ServerURL = serverURL;
+            if (string.IsNullOrEmpty(ServerURL))
+                ServerURL = "https://api.appicket.com";
 
-            this.CurrentSession = new TrackingSessionWriteModel() { SessionID = sessionID, ReferencedSessionID = refSessionID };
+            CurrentSession = new TrackingSessionWriteModel() { SessionID = sessionID, ReferencedSessionID = refSessionID };
             if (!InstanceID.HasValue)
             {
                 InstanceID = new Random().Next(int.MaxValue);
-                this.CheckIsEnabled(() =>
+                CheckIsEnabled(() =>
                 {
                     if (!string.IsNullOrEmpty(openAPIDocPath))
-                        this.RegisterAPIDocumentation(openAPIDocPath);
+                        RegisterAPIDocumentation(openAPIDocPath).RunSynchronously();
                 });
 
                 HiddenRequestParams.AddRange(new List<string>() { "Password", "Email", "TCK", "Birthday", "BirthYear", "Birthdate", "Credit", "IdentityNumber" });
             }
             else
             {
-                this.StartSession(true);
+                var session = StartSession();
+                if (session != null)
+                    CurrentSession.SessionID = session.Id;
             }
-
-            _CurrentAnalyzerHolder.Value = this;
         }
 
-        public void ResolveHeaders(HttpResponseMessage response)
+        public static void ResolveHeaders(HttpResponseMessage response)
         {
-            if (this.CurrentSession == null || response == null)
+            if (CurrentSession == null || response == null)
                 return;
 
             if (response.Headers.Contains("X-APPICKET-SID"))
-                this.CurrentSession.SessionID = Convert.ToInt64(response.Headers.GetValues("X-APPICKET-SID").FirstOrDefault());
+                CurrentSession.SessionID = Convert.ToInt64(response.Headers.GetValues("X-APPICKET-SID").FirstOrDefault(), System.Globalization.CultureInfo.CurrentCulture);
             if (response.Headers.Contains("X-REF-APPICKET-SID"))
-                this.CurrentSession.ReferencedSessionID = Convert.ToInt64(response.Headers.GetValues("X-REF-APPICKET-SID").FirstOrDefault());
+                CurrentSession.ReferencedSessionID = Convert.ToInt64(response.Headers.GetValues("X-REF-APPICKET-SID").FirstOrDefault(), System.Globalization.CultureInfo.CurrentCulture);
             if (response.Headers.Contains("X-VIEW-APPICKET-SID"))
-                this.CurrentSession.ReferencedSessionID = Convert.ToInt64(response.Headers.GetValues("X-VIEW-APPICKET-SID").FirstOrDefault());
+                CurrentSession.ReferencedSessionID = Convert.ToInt64(response.Headers.GetValues("X-VIEW-APPICKET-SID").FirstOrDefault(), System.Globalization.CultureInfo.CurrentCulture);
         }
-        public void SetHeaders(WebHeaderCollection headers, string requestedURL = "")
+        public static void SetHeaders(WebHeaderCollection headers, string requestedURL = "")
         {
-            if (this.CurrentSession == null || headers == null)
+            if (CurrentSession == null || headers == null)
                 return;
             headers.Add("X-APPICKET-REQURL", requestedURL);
-            headers.Add("X-APPICKET-SID", this.CurrentSession.SessionID.ToString());
-            headers.Add("X-REF-APPICKET-SID", this.CurrentSession.ReferencedSessionID.ToString());
+            headers.Add("X-APPICKET-SID", CurrentSession.SessionID.ToString(System.Globalization.CultureInfo.CurrentCulture));
+            headers.Add("X-REF-APPICKET-SID", CurrentSession.ReferencedSessionID.ToString(System.Globalization.CultureInfo.CurrentCulture));
         }
-        private void RegisterAPIDocumentation(string path)
+        private async static Task RegisterAPIDocumentation(string path)
         {
-            if (this.IsActive)
-                OpenAPI.Parser.Parse(path, this);
+            if (Analyzer.IsActive)
+                await OpenAPI.Parser.Parse(path);
         }
-        internal void RegisterAPIDocumentation(OpenAPIDocument model)
+        internal static async Task RegisterAPIDocumentation(OpenAPIDocument model)
         {
             if (model == null)
                 return;
 
-            if (this.IsActive)
+            if (Analyzer.IsActive)
             {
-                this.RunInTread(() =>
+                await PostData("/public/RegisterOpenAPIDocument", new
                 {
-                    this.PostData("/public/RegisterOpenAPIDocument", new
+                    Title = model.info.title,
+                    Description = model.info.description,
+                    Version = model.info.version,
+                    model.RawContent,
+                    TrackingHost = new
                     {
-                        Title = model.info.title,
-                        Description = model.info.description,
-                        Version = model.info.version,
-                        model.RawContent,
-                        TrackingHost = new
-                        {
-                            Name = model.host
-                        },
-                        URLs = from path in model.paths
-                               select new
-                               {
-                                   Path = path.Key
-                               }
-                    });
+                        Name = model.host
+                    },
+                    URLs = from path in model.paths
+                           select new
+                           {
+                               Path = path.Key
+                           }
                 });
             }
         }
-        public bool ContainsHiddenParams(string content)
+
+        public static bool ContainsHiddenParams(string content)
         {
             if (string.IsNullOrEmpty(content))
                 return false;
@@ -373,7 +329,7 @@ namespace Appicket.Analytics
             }
             return false;
         }
-        public void AddHiddenRequestParams(List<string> list)
+        public static void AddHiddenRequestParams(List<string> list)
         {
             if (list == null || !list.Any())
                 return;
@@ -386,10 +342,28 @@ namespace Appicket.Analytics
                 list.Remove(val);
             }
         }
-        private void RunInTread(ThreadStart ts)
+
+        private static bool Processing;
+        public static Task ProcessQueue()
         {
-            var t = new Thread(ts);
-            t.Start();
+            if (!Processing)
+            {
+                Processing = true;
+                while (true)
+                {
+                    if (!Analyzer.IsActive)
+                        Thread.Sleep(60000);
+                    else
+                    {
+                        for (int i = Sessions.Count - 1; i >= 0; i--)
+                        {
+                            _ = Commit(Sessions[i]);
+                            Sessions.RemoveAt(i);
+                        }
+                    }
+                }
+            }
+            return null;
         }
     }
 }

@@ -1,15 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
-using System.Threading;
 using Appicket.Analytics.Models;
 using Microsoft.AspNetCore.Http.Extensions;
-using System.Linq;
 using System.IO;
-using System.Security.Cryptography;
 
 namespace Appicket.Analytics.WebAPI.Extensions.Middlewares
 {
@@ -48,14 +44,13 @@ namespace Appicket.Analytics.WebAPI.Extensions.Middlewares
             if (string.IsNullOrEmpty(options.DeviceID) && !string.IsNullOrEmpty(DeviceID))
                 options.DeviceID = DeviceID;
 
-            var Analyzer = new Analyzer(options, this.MiddlewareOptions.AppicketServerURL, Convert.ToInt64(AppicketSessionID), Convert.ToInt64(RefAppicketSessionID), this.MiddlewareOptions.APIDocumentationPath);
-            Analyzer.EnableRequestBodyLogging = this.MiddlewareOptions.EnableRequestBodyLogging;
-            Analyzer.AddHiddenRequestParams(this.MiddlewareOptions.HiddenRequestParams);
+            Analytics.Analyzer.AddHiddenRequestParams(this.MiddlewareOptions.HiddenRequestParams);
+            Analytics.Analyzer.EnableRequestBodyLogging = this.MiddlewareOptions.EnableRequestBodyLogging;
 
-            if (!Analyzer.IsActive || Analyzer.SessionID.GetValueOrDefault(0) <= 0)
+            var Analyzer = new Analyzer(options, this.MiddlewareOptions.AppicketServerURL, Convert.ToInt64(AppicketSessionID), Convert.ToInt64(RefAppicketSessionID), this.MiddlewareOptions.APIDocumentationPath);
+            if (!Analytics.Analyzer.IsActive || Analyzer.SessionID.GetValueOrDefault(0) <= 0)
                 return BeginInvoke(context);
 
-            context.Items["Appicket"] = Analyzer;
             context.Response.Cookies.Append("X-APPICKET-SID", Analyzer.SessionID.ToString(), new CookieOptions() { Path = "/", MaxAge = TimeSpan.FromMinutes(120), HttpOnly = false, Secure = context.Request.IsHttps });
             context.Response.Headers.Add("X-APPICKET-SID", new Microsoft.Extensions.Primitives.StringValues(Analyzer.SessionID.ToString()));
 
@@ -67,15 +62,17 @@ namespace Appicket.Analytics.WebAPI.Extensions.Middlewares
             }
             catch (Exception ex)
             {
-                Analyzer.LogException(ex);
+                Analytics.Analyzer.LogException(ex);
                 throw;
             }
             finally
             {
                 watch.Stop();
+                watch = null;
+
                 if (this.MiddlewareOptions.IsWebAPI)
                 {
-                    Analyzer.LogRequest(new TrackingRequestLogModel()
+                    Analytics.Analyzer.LogRequest(new TrackingRequestLogModel()
                     {
                         ContentType = context.Request.ContentType,
                         Duration = Convert.ToInt32(watch.ElapsedMilliseconds),
@@ -91,7 +88,7 @@ namespace Appicket.Analytics.WebAPI.Extensions.Middlewares
                 }
                 else
                 {
-                    Analyzer.ViewPage(new TrackingPageViewModel()
+                    Analytics.Analyzer.ViewPage(new TrackingPageViewModel()
                     {
                         Duration = Convert.ToInt32(watch.ElapsedMilliseconds),
                         PagePath = context.Request.GetEncodedUrl(),
@@ -100,7 +97,7 @@ namespace Appicket.Analytics.WebAPI.Extensions.Middlewares
                         ResponseBodyLength = context.Response.ContentLength.GetValueOrDefault(0)
                     });
                 }
-                Analyzer.Commit();
+                Analytics.Analyzer.Commit();
             }
         }
         private string GetUserAgent(HttpRequest request)

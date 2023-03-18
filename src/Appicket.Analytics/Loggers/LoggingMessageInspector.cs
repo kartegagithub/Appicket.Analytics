@@ -29,8 +29,8 @@ namespace Appicket.Analytics.Loggers
                 reply = buffer.CreateMessage();
             }
 
-            Analyzer.Current?.LogRequest(this.RequestModel);
-            Analyzer.Current?.Commit();
+            Analyzer.LogRequest(this.RequestModel);
+            Analyzer.Commit();
             this.RequestModel = null;
             this.Watch = null;
         }
@@ -42,7 +42,7 @@ namespace Appicket.Analytics.Loggers
             this.RequestModel.Headers = Newtonsoft.Json.JsonConvert.SerializeObject(request.Headers);
             using (var buffer = request.CreateBufferedCopy(int.MaxValue))
             {
-                if (Analyzer.Current != null && Analyzer.Current.EnableRequestBodyLogging)
+                if (Analyzer.EnableRequestBodyLogging)
                 {
                     var document = GetDocument(buffer.CreateMessage());
                     this.RequestModel.Parameters = document.OuterXml;
@@ -54,7 +54,7 @@ namespace Appicket.Analytics.Loggers
             }
         }
 
-        private XmlDocument GetDocument(Message request)
+        private static XmlDocument GetDocument(Message request)
         {
             XmlDocument document = new XmlDocument();
             using (MemoryStream memoryStream = new MemoryStream())

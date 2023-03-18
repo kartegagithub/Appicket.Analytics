@@ -25,7 +25,7 @@ namespace Appicket.Analytics.Test
         public void SetHeadersTest()
         {
             var headers = new System.Net.WebHeaderCollection() { };
-            this.Analyzer.SetHeaders(headers, "");
+            Analyzer.SetHeaders(headers, "");
             Assert.Pass();
         }
     }

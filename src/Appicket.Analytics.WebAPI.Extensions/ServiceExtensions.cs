@@ -1,6 +1,7 @@
 ﻿using Appicket.Analytics.WebAPI.Extensions.Middlewares;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
@@ -8,6 +9,10 @@ namespace Appicket.Analytics.WebAPI.Extensions
 {
     public static class ServiceExtensions
     {
+        public static IServiceCollection UseAppicket(this IServiceCollection services)
+        {
+            return services.AddHostedService<AnalyzerService>();
+        }
         public static IApplicationBuilder UseAppicket(this IApplicationBuilder builder)
         {
             return builder.UseAppicket(null);
@@ -23,9 +28,7 @@ namespace Appicket.Analytics.WebAPI.Extensions
                     {
                         try
                         {
-                            var appicket = (Analyzer)context.Items["Appicket"];
-                            if (appicket != null)
-                                appicket.LogException(contextFeature.Error);
+                            Analyzer.LogException(contextFeature.Error);
                         }
                         catch (Exception)
                         {
